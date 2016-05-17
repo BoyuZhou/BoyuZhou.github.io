@@ -1,0 +1,14 @@
+---
+layout: post
+title: "gulp"
+date:   2016-05-17 13:38:07 +0800
+tag: "工欲善其事，必先利其器"
+---
+## gulp一个基于流的自动化构建工具
+ [gulp中文官网](http://www.gulpjs.com.cn/)
+ ### API一览
+ #### gulp.src
+ gulp.src(globs[,options])
+
+ 匹配一个或一组符合要求的文件
+
