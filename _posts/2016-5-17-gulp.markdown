@@ -1,6 +1,6 @@
 ---
 layout: post
-title: "gulp"
+title: "gulp常用介绍"
 date:   2016-05-17 13:38:07 +0800
 tag: "工欲善其事，必先利其器"
 ---
@@ -11,4 +11,3 @@ tag: "工欲善其事，必先利其器"
  gulp.src(globs[,options])
 
  匹配一个或一组符合要求的文件
-

@@ -1,0 +1,23 @@
+{
+  "name": "BoyuZhou.github.io",
+  "version": "1.0.0",
+  "description": "_config.yml 初始化参数配置 _drafts 缓存目录 _includes 页面组件{% include ** %}引入 _layouts 页面外部模板{{content}}引入内容 _posts 页面 名称 YEAR-MONTH-DAY-title.markup _data 保存数据由site.data访问 _site 生成好的页面目录 .jekyll-metadata 记录更改信息",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/BoyuZhou/BoyuZhou.github.io.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/BoyuZhou/BoyuZhou.github.io/issues"
+  },
+  "homepage": "https://github.com/BoyuZhou/BoyuZhou.github.io#readme",
+  "dependencies": {
+    "bootstrap": "^3.3.7"
+  }
+}
