@@ -1,0 +1,271 @@
+---
+layout: post
+title: "package.json各个字段解读"
+date:   2016-08-08 13:40:07 +0800
+tag: "工欲善其事，必先利其器"
+---
+
+# package.json各个字段解读
+
+package.json是npm基于CommonJS规范的对包描述文件的定义，做了一些细节改变的npm包描述文件。
+
+以下，带`*`的是可选字段，其他必须字段。
+
+### name 包名
+
+由小写字母、数字和`.-_`组成，不允许出现空格。包名必须是唯一的，且建议不添加js和node字段来标识是js模块。
+
+### description * 包描述。
+
+当使用npm search命令时会搜索这个字段。
+
+### version 版本号
+
+语义化的版本号，通常为主版本号.次版本号.修订号格式。
+- 主版本号：当做了不兼容的API修改
+- 次版本号：当做了向下兼容的功能性新增
+- 修订号：当做了向下兼容的问题修正。
+
+先行版本号及版本编译信息可以加到版本号后面，作为延伸。如1.2.3-release。
+
+### keywords * 关键词
+
+关键词作为数组存在，用于NPM中分类搜索，所以准确的关键词设定，有利于用户快速找到你的包。当使用npm search命令时会搜索这个字段。
+
+### maintainers * 包维护者列表
+
+每个维护者由name，email，web三个属性组成，如：
+
+```
+"maintainers": [{
+    "name": "Zhouboyu",
+    "email": "zhouboyu@qq.com",
+    "web": "tinper.org"
+    }]
+```
+NPM通过该属性进行权限认证。
+
+### author * 作者
+作者是一个人。
+
+### contributions * 贡献者列表
+
+开源项目中，社区中人参与度比较高，对当前包贡献代码的可以添加进这个列表，一般第一个是作者，这个格式与维护者列表一样。
+
+### bugs * 一个可以反馈bug的地址或邮件地址。
+
+npm bugs用的上。
+
+### licenses * 许可证列表
+
+### repositories * 托管代码的位置列表
+
+### config * 配置对象
+
+Config对象中的值在Scripts的整个周期中皆可用，专门用于给Scripts提供配置参数。
+
+### homepage * 网站地址
+
+没有http://等带协议前缀的URL。
+
+### engine * 支持的Javascript引擎列表
+
+### engineStrick *
+布尔值。如果你肯定你的程序只能在制定的engine上运行，设置为true。
+
+### Os *
+。指定模块可以在什么操作系统上运行：
+
+"os" : [ "darwin","Linux" ]
+
+"os" : [ "!win32" ]
+
+### CPU *
+指定CPU型号。
+
+"cpu" : [ "x64","ia32" ]
+
+"cpu" : [ "!arm","!mips" ]
+
+### directories * 目录说明
+
+### bin * 添加命令
+
+这个指令给当前包添加命令的，可以在命令行工具执行。当全局安装时，可以全局调用命令，当本地安装，可以在本地调用命令。
+
+```
+"bin": {
+"aa": "./bin/aa"
+}
+```
+
+### mian * 入口地址
+
+当用户使用require引用模块时，，会优先使用这个字段，当没有没这个字段时，会查找包根目录下的index（.js/.node/.json）文件。
+
+### scripts * 脚本说明对象
+
+npm scripts 是写在package.json中scripts字段定义的脚本命令。
+
+使用npm run script来执行脚本。
+优点：
+- 项目的相关脚本，集中放置管理。
+- 不同的脚本命令，只要功能相同就可设定同一对外接口
+- 可以利用npm的很多辅助功能。
+#### 原理
+每当执行npm run,就会创建一个Shell，在Shell里执行指定的脚本，所以只要是Shell可执行的命令，就可以写在npm中。
+ 当创建Shell时，会将node_modules/.bin子目录加入PATH中，执行完再恢复PATH。所以scripts中的脚本命令，不需要添加路径，可以直接写命令。
+
+```
+	 //no
+	{
+		 "scripts": {
+					"test": "./node_modules/.bin/mocha"
+		}
+    }
+	//yes
+	 {
+		 "scripts": {
+					"test": "mocha"
+		}
+    }
+```
+
+npm脚本的退出码，遵守Shell脚本规则。如果退出码不是0，npm就认为执行这个脚本时报。
+
+#### 通配符
+npm可以使用Shell通配符。如：
+```
+"test": "mocha test/*.test.js"
+```
+但是如果要对原始命令使用通配符，要使用`\`转义。
+
+#### 传参
+npm脚本传参，使用`--`标识。
+也可以再度封装命令。
+```
+"test": "mocha",
+"test:lint": "jshint *.js"
+```
+#### 执行顺序
+`&`并行执行`&&`顺序执行，还可以使用script-runner、npm-run-all、redrun等任务管理模块。
+
+#### 默认值
+npm提供两个默认脚本
+```
+"start": "node server.js",
+"install": "node-gyp rebuild"
+```
+第一个需要当前目录下有server.js文件，第二个需要当前目录下有binding.gyp文件。
+
+#### 钩子
+npm脚本有pre和post两个钩子。
+```
+"pretest": "before",
+"test": "mocha",
+"posttest": "after"
+```
+执行`npm run test`会按照这个执行
+```
+npm run pretest && npm run test && npm run posttest
+```
+所以可以使用钩子执行一些准备和联合操作。
+默认提供的钩子：
+- publish
+- install
+- uninstall
+- version
+- test
+- stop
+- start
+- restart
+自定义的命令也可以添加pre和post钩子，不过双重的prepre和postpost无效
+npm还提供一个npm_lifecycle_event变量，返回当前执行脚本的名称，所以可以利用这个变量，在一个脚本文件内，为不同的scripts命令编写代码。如
+```javascript
+const TARGET = process.env.npm_lifecycle_event;
+if (TARGET === "test") {
+	console.log('run test');
+}
+
+if (TARGET === "pretest") {
+	console.log('run pretest');
+}
+
+if (TARGET === "posttest") {
+	console.log('run posttest');
+}
+```
+
+#### 简写形式
+- npm start
+- npm test
+- npm start
+- npm restart （会执行三个命令 npm run stop && npm run restart && npm run start ）
+执行顺序为
+prerestart > prestop > stop > poststop > restart > prestart > start > poststart > postrestart
+
+#### 变量
+npm脚本有一个非常强大得功能，可以使用npm内部变量
+
+首先，通过npm_package前缀可以获取到package.json里面的字段。
+```
+//js脚本中
+var name = process.env.npm_package_name;
+
+//shell脚本
+$npm_package_name
+```
+使用npm_config可以拿到npm的配置变量，如npm_config_tag拿到发布标签，package.json的config的变量会被环境变量覆盖。
+```
+"name": "foo",
+"config": {"port": "8080"}
+```
+会被
+```
+npm config set foo:port 80
+```
+evn命令会列出所有环境变量
+```
+"env": "env"
+```
+
+### dependencies * 依赖列表
+
+当前包使用所依赖的列表。使用npm install --save 会添加包名到这个列表。
+
+#### 版本格式
+
+- version 完全匹配
+- `>version` 大于这个版本
+- `>=version`大于或等于这个版本
+- <version
+- <=version
+- ~version 非常接近这个版本
+- ^version 与当前版本兼容
+- 1.2.x X代表任意数字，因此1.2.1, 1.2.3等都可以
+- http://... Unix系统下使用的tarball的URL。
+- `*` 任何版本都可以
+- ""任何版本都可以
+- version1 - version2  等价于 >=version1 <=version2.
+- range1 || range2 满足任意一个即可
+- git... Git地址
+- user/repo
+
+### devDependencies * 开发依赖列表
+
+在开发包时依赖的包列表。使用npm install --save-dev 会添加包名到这个列表。
+
+### peerDependencies *
+
+兼容性依赖。如果你的包是插件，适合这种方式。
+
+### bundledDependencies *
+
+。发布包时同时打包的其他依赖。
+
+### optionalDependencies *
+
+如果你想在某些依赖即使没有找到，或则安装失败的情况下，npm都继续执行。那么这些依赖适合放在这里。
+
+#### 参考
+[http://semver.org](http://semver.org)

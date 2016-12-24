@@ -115,9 +115,9 @@
     border-top: 1px solid $grey-color-light;
     padding: $spacing-unit 0;
     background: #2d2d2d;
-    position: absolute;
-    width: 100%;
-    bottom: 0;
+    // position: fixed;
+    // width: 100%;
+    // bottom: 0;
     a{
         color: #d8d0d0;
         &:visited{
