@@ -1,0 +1,283 @@
+---
+layout: post
+title: "搭建你的mobx react应用"
+date:   2017-05-31 20:40:07 +0800
+tag: "框架解读"
+---
+
+# 搭建你的mobx react应用
+
+- 阅读这篇文章，需要你有一定的react开发基础和配置基础。
+
+- mobx的大部分写法都使用了decorator语法，所以请引入`babel-plugin-transform-decorators-legacy`来提供支持。
+
+- 本文由一个简单的单页应用例子，来讲一下mobx和react的结合使用。
+
+- 示例代码在[http://github.com/Boyuzhou/mobxDemo.git](http://github.com/Boyuzhou/mobxDemo.git)
+
+- 例子中使用了tinper-bee组件库，如果你看着不错，欢迎下载使用哦。
+
+### 依赖
+
+- react
+- react-dom
+- react-router
+- mobx
+- mobx-react
+
+### 简单api介绍
+
+
+- observable  监听
+```
+import {observable} from "mobx";
+
+class OrderLine {
+    @observable price:number = 0;
+    @observable amount:number = 1;
+
+    constructor(price) {
+        this.price = price;
+    }
+}
+```
+创建监听，对数据创建监听，每当数据改变，可以进行一些操作。
+
+- observer 观察员
+```
+import {observer} from "mobx-react";
+@observer
+class xxx extends React.Component{
+
+}
+```
+可以看做是一个观察员，每当被监听的值变化，就重新渲染组件
+
+- computed 计算
+```
+import {observable, computed} from "mobx";
+
+class OrderLine {
+    @observable price:number = 0;
+    @observable amount:number = 1;
+
+    constructor(price) {
+        this.price = price;
+    }
+
+    @computed get total() {
+        return this.price * this.amount;
+    }
+}
+```
+计算，在class中只支持get方法，用于获得计算结果，并产生一个可以被监听的新值。一般只包含纯计算，不会带有其他副作用（请求，日志等）。而且计算是基于运行时，将依赖降到最小。
+基于上面那个例子就是price变化后的回调函数，来自动计算`this.price * this.amount`的值。
+
+- action 操作员
+```
+import { observable, action } from 'mobx';
+
+class LoginStore {
+    @observable username;
+    @observable password;
+
+    constructor() {
+        this.username = '';
+        this.password = '';
+    }
+
+    @action changeUsername = (value) => {
+        this.username = value;
+    }
+    @action changePassword = (value) => {
+        this.password = value;
+    }
+}
+```
+规定在组件内不能操作监听数据，只能通过action来改变监听数据。所以action就是改变监听数据的方法。
+
+- autorun 自动运行
+```
+import {observable, computed} from "mobx";
+
+class OrderLine {
+    @observable price:number = 0;
+    @observable amount:number = 1;
+
+    constructor(price) {
+        this.price = price;
+    }
+
+    @computed get total() {
+        return this.price * this.amount;
+    }
+
+    @autorun print(){
+        console.log(this.price)
+    }
+}
+```
+在监听数据改变时，自动运行。一般执行一些打印信息及接口请求操作。
+
+
+其他一些api，并不是很常用，所以暂不介绍。
+
+### 目录结构
+
+```
+|- src
+    |- actions
+    |- assets
+    |- components
+    |- containers
+    |- stores
+    |- routes
+    |- index.js
+|- inde.html
+```
+我假设大家已经熟悉react开发，所以没有列出基本配置文件（与只使用react开发一样），只列出了开发代码相关目录。
+
+- actions 用于存放每个功能节点下合成actions。当某些操作，需要合成多个不同store下的action时，在这里合并成一个方法。
+- stores 我们将原来组件里的props和state拿出来作为一个类，进行监听管理。这个就是store，我们这里对功能节点进行分类来划分store。
+- assets 存放资源（图片等）
+- components 存放UI组件和木偶组件（不包含内部逻辑，只渲染dom）
+- containers 容器组件，进行UI组件整合，负责处理业务逻辑及数据绑定
+- routes 放置路由文件
+- index.js 入口文件
+
+### 代码分析
+
+#### 路由设置
+
+/routes/index.js
+```
+import { Provider } from 'mobx-react';
+import { Router, Route, IndexRoute, browserHistory } from 'react-router';
+import React from 'react';
+import * as stores from '../stores';
+import { App, Login, Homepage } from '../containers';
+
+
+export default (
+    <Provider { ...stores}>
+        <Router history={ browserHistory }>
+            <Route path="/" component={App} >
+                <IndexRoute component={Login} />
+                <Route path="/homepage" component={Homepage} />
+            </Route>
+        </Router>
+    </Provider>
+)
+```
+这个路由的设置，跟我们正常开发react区别就是由mobx-react包提供的`Provider`组件来包裹住`Router`组件，它的作用是将我们定义在stores目录下的store注入我们的组件中，使其可以在组件内引用到。
+
+
+#### 定义store
+
+/stores/loginStore/index.js
+```
+import { observable, action } from 'mobx';
+
+class LoginStore {
+    @observable username;
+    @observable password;
+
+    constructor() {
+        this.username = '';
+        this.password = '';
+    }
+
+    @action changeUsername = (value) => {
+        this.username = value;
+    }
+    @action changePassword = (value) => {
+        this.password = value;
+    }
+}
+
+const loginStore = new LoginStore();
+
+export default loginStore;
+export { LoginStore };
+
+```
+首先我们将管理的状态和数据按照模块划分设置为一个类。通过`@observable username`来设置数据监听。通过`@action function`定义数据改变方法。最后将类创建一个实例导出，供组件引用。
+
+#### 编写组件
+
+/containers/Login/index.js
+```
+import React, {Component} from 'react';
+import {observer, inject} from 'mobx-react';
+import DevTools from 'mobx-react-devtools';
+import { Row, Col, Tile, Button, Form, FormControl, Label, FormGroup } from 'tinper-bee';
+import { Link } from 'react-router';
+
+import './index.css';
+
+@inject('loginStore') @observer
+class Login extends Component {
+
+    changeUsername = (e) => {
+        this.props.loginStore.changeUsername(e.target.value)
+    }
+
+    changePassword = (e) => {
+        this.props.loginStore.changePassword(e.target.value)
+    }
+
+    render() {
+        return (
+            <Row className="login login-bg">
+                <Col sm={3} smOffset={8}>
+                    <Tile className="login-tile">
+                        <h3 className="login-title">登录</h3>
+                        <Form>
+                            <FormGroup>
+                                <Label>用户名</Label>
+                                <FormControl
+                                    onChange={ this.changeUsername }
+                                    placeholder="请输入用户名"
+                                />
+                            </FormGroup>
+                            <FormGroup>
+                                <Label>密码</Label>
+                                <FormControl
+                                    onChange={ this.changePassword }
+                                    placeholder="请输入密码"
+                                />
+                            </FormGroup>
+                            <Button
+                                shape="squared"
+                                colors="primary"
+                                className="submit-btn">
+                                    登录
+                            </Button>
+                        </Form>
+                    </Tile>
+                </Col>
+            </Row>
+        );
+    }
+}
+;
+
+export default Login;
+
+```
+
+与以往我们组件开发不同的是，我们先使用了`@inject('loginStore')`修饰器，注入了我们之前定了loginStore（可注入多个store）。再使用了`@observer`对组件进行了观察，等监听数据更新，更新组件。组件内部通过`this.props.loginStore`来获取注入的store上的数据及方法。
+
+
+### 使用感受
+
+对于使用mobx开发react应用。与以往不同的感受是，我们通过将数据状态和更新操作从组件中抽离单独管理起来，可以更好的分离和解耦数据及控制器和视图。更利于代码维护。而且这样解耦可以很好解决组件间通信的问题。
+
+我很喜欢mobx这个库，对于简单应用，mobx涉及的api和概念很少，可以快速接入，进行开发。相对redux来说，上手简单而且效果不错，建议大家合适的项目可以尝试一下。
+
+
+### 有用的链接
+
+- [我的DEMO](http://github.com/Boyuzhou/mobxDemo.git) 会持续优化更新
+- [讲原理的文章](https://github.com/sorrycc/blog/issues/3) 讲的还算清楚，比英文文档好多了
+- [官网](https://mobx.js.org/index.html)
