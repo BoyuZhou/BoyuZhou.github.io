@@ -43,3 +43,9 @@
     </div>
   </div>
 </footer>
+
+<!-- Service Worker -->
+{% if site.service-worker %}
+<script src="{{ "/assets/js/snackbar.js " | prepend: site.baseurl }}"></script>
+<script src="{{ "/assets/js/sw-registration.js " | prepend: site.baseurl }}"></script>
+{% endif %}

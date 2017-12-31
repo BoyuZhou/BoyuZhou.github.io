@@ -20,6 +20,7 @@ description: >- # this means to ignore newlines until "baseurl:"
 baseurl: "" # the subpath of your site, e.g. /blog
 url: "https://boyuzhou.github.io"
 
+keyword: "周博宇 周博宇博客 | Alex Zhou blog | fed | developer | mobile Developer"
 github_username:  boyuzhou
 
 # Build settings
@@ -42,3 +43,8 @@ plugins:
 #   - vendor/cache/
 #   - vendor/gems/
 #   - vendor/ruby/
+
+
+# Progressive Web Apps
+chrome-tab-theme-color: "#0084ff"
+service-worker: true
